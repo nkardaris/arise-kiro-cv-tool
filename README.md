@@ -1,6 +1,6 @@
 # cv_tool (ROS 2 + Docker)
 
-Computer-vision action server for robotic-arm tool detection.
+Action server for image-based tool detection used in the ARISE-KIRO project.
 The node subscribes to RGB and depth camera topics, runs a YOLO OpenVINO model, and serves detection results through a ROS 2 action.
 
 ## Quick Start
