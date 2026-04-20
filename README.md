@@ -266,14 +266,3 @@ In `cv_tool.py`, the parser currently allows model choices:
 
 But repository model folders include `11l_openvino_model` (with `11l` naming).
 If `11l` is intended, update parser choices accordingly before using it.
-
-## Troubleshooting
-
-- No detections: lower `--conf_thres` (for example 0.2 -> 0.15) and verify camera topics.
-- Never reaches success: reduce `--buffer_size` or increase centering margins.
-- Allen key size confusion: ensure depth topic is valid because allen size logic relies on depth-derived dimensions.
-- ROS discovery issues in Docker: verify `--net=host` and ROS domain settings.
-
-## License
-
-License fields are currently placeholders in package manifests. Add your project license before publishing publicly.
