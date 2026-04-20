@@ -1,0 +1,35 @@
+# ROS 2 / colcon build artifacts
+cv_tool_ws/build/
+cv_tool_ws/install/
+cv_tool_ws/log/
+
+# Python cache / virtual env
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Runtime/debug outputs
+output_images_*/
+*.log
+
+# Models
+cv_tool_ws/src/cv_tool/cv_tool/models/
+*.pt
+*.pth
