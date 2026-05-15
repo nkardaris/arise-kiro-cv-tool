@@ -28,8 +28,3 @@ Thumbs.db
 # Runtime/debug outputs
 output_images_*/
 *.log
-
-# Models
-cv_tool_ws/src/cv_tool/cv_tool/models/
-*.pt
-*.pth

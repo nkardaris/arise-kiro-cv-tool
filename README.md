@@ -83,15 +83,10 @@ Container `CMD` launches:
 ros2 launch cv_tool cv_tool.launch.py
 ```
 
-The launch file currently starts the node with these defaults:
-- `--rgb_topic /camera/camera/color/image_raw`
-- `--depth_topic /camera/camera/depth/image_rect_raw`
-- `--model 11n_int8`
-- `--buffer_size 8`
-- `--conf_thres 0.2`
-- `--margin_x 70`
-- `--margin_y 70`
-- `--verbose`
+The launch file starts the node with a config file:
+- `--config <package_share>/config/config.yaml`
+
+Defaults live in `config.yaml`. Update that file and rebuild/re-source to apply changes inside the container.
 
 ## Build and run without Docker
 
@@ -107,58 +102,56 @@ source install/setup.bash
 Run node directly (lets you override arguments without editing launch):
 
 ```bash
-ros2 run cv_tool cv_tool \
-  --rgb_topic /camera/camera/color/image_raw \
-  --depth_topic /camera/camera/depth/image_rect_raw \
-  --model 11n_int8 \
-  --buffer_size 8 \
-  --conf_thres 0.2 \
-  --margin_x 70 \
-  --margin_y 70
+ros2 run cv_tool cv_tool --config /cv_tool_ws/src/cv_tool/config/config.yaml
 ```
 
-## Parameters and how to change them
+## Configuration
 
-The node uses CLI arguments (not ROS parameter server parameters).
-You can change values in two ways:
+The node uses a YAML config file passed via `--config`.
 
-1. Edit `cv_tool_ws/src/cv_tool/launch/cv_tool.launch.py` in the `arguments=[...]` list.
-2. Launch with `ros2 run cv_tool cv_tool ...` and pass desired flags.
+Default config locations:
+- Source tree: `cv_tool_ws/src/cv_tool/config/config.yaml`
+- Installed: `/cv_tool_ws/install/cv_tool/share/cv_tool/config/config.yaml`
+
+When running inside Docker, the launch file points at the installed config. Edit the source config and rebuild, or mount an external config and pass its absolute path.
 
 ### Supported arguments
 
-- `--rgb_topic` (string)
-  - Default: `/camera/camera/color/image_raw`
+- `--config` (string, required)
+  - Path to `config.yaml` with all parameters.
+
+### Config keys
+
+- `rgb_topic` (string)
   - RGB image topic to subscribe.
 
-- `--depth_topic` (string)
-  - Default: `/camera/camera/depth/image_rect_raw`
+- `depth_topic` (string)
   - Depth image topic to subscribe.
 
-- `--model` (string)
-  - Default: `11n_int8`
-  - Selects model key used to resolve:
-    - `/cv_tool_ws/src/cv_tool/cv_tool/models/<model>_openvino_model`
+- `model_path` (string)
+  - Path to OpenVINO model folder. Relative paths resolve under the package share
+    (installed at `share/cv_tool/`), with a fallback to the Python module directory.
 
-- `--buffer_size` (positive int)
-  - Default: `8`
+- `buffer_size` (positive int)
   - Number of consecutive frames where target must be detected before success.
 
-- `--conf_thres` (float in `[0.1, 1.0]`)
-  - Default: `0.2`
+- `conf_thres` (float in `[0.1, 1.0]`)
   - Confidence threshold for accepted detections.
 
-- `--margin_x` (positive int)
-  - Default: `70`
+- `margin_x` (positive int)
   - Horizontal centering tolerance in pixels.
 
-- `--margin_y` (positive int)
-  - Default: `70`
+- `margin_y` (positive int)
   - Vertical centering tolerance in pixels.
 
-- `--verbose` (flag)
-  - Default: off in node, on in provided launch file
+- `verbose` (bool)
   - Enables debug logging and saves annotated images to `output_images_<model>/`.
+
+- `tool_class_names` (list of strings)
+  - Valid tool names accepted by the action server.
+
+- `camera_intrinsics` (mapping)
+  - `fx`, `fy`, `cx`, `cy`, `depth_scale` used for 3D measurements.
 
 ## Action API
 
@@ -183,7 +176,7 @@ Feedback:
 ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: screwdriver}" --feedback
 ```
 
-Valid tool names currently expected by the server:
+Valid tool names are read from `tool_class_names` in the config. Default list:
 - `allen_small`
 - `allen_large`
 - `long_nose_pliers_large`
@@ -199,9 +192,8 @@ Valid tool names currently expected by the server:
 
 ## Using a custom model
 
-The node loads OpenVINO models from this pattern:
-
-- `/cv_tool_ws/src/cv_tool/cv_tool/models/<model_key>_openvino_model`
+The node loads YOLO, OpenVINO or compatible models from `model_path` in the config.
+Relative paths are resolved under the package share (installed at `share/cv_tool/`).
 
 ### A. Export your model to OpenVINO
 
@@ -220,7 +212,7 @@ This produces an OpenVINO folder (typically containing `.xml` and `.bin`).
 
 ### B. Copy into package models directory
 
-Example target:
+Example target (relative path in config):
 
 ```bash
 cv_tool_ws/src/cv_tool/cv_tool/models/my_model_openvino_model/
@@ -228,16 +220,17 @@ cv_tool_ws/src/cv_tool/cv_tool/models/my_model_openvino_model/
 
 Make sure folder contains model files expected by Ultralytics OpenVINO runtime (for example `best.xml` and `best.bin`).
 
-### C. Enable your model key in argument parser
+### C. Update config
 
-Edit `cv_tool_ws/src/cv_tool/cv_tool/cv_tool.py`, update `--model` choices to include your key, for example `my_model`.
-Then run with:
+Set in `config.yaml`:
 
-```bash
-ros2 run cv_tool cv_tool --model my_model
+```yaml
+model_path: models/my_model_openvino_model
 ```
 
-If you use launch file, also change `--model` value in `cv_tool.launch.py`.
+If you mount models from a host path in Docker, use an absolute path instead.
+
+Note: If your custom model includes tools that look identical but differ in size, you may want to adjust the size heuristics in [cv_tool/cv_tool_ws/src/cv_tool/cv_tool/cv_tool.py](cv_tool/cv_tool_ws/src/cv_tool/cv_tool/cv_tool.py#L190) and [cv_tool/cv_tool_ws/src/cv_tool/cv_tool/cv_tool.py](cv_tool/cv_tool_ws/src/cv_tool/cv_tool/cv_tool.py#L212).
 
 ### D. Rebuild
 
@@ -256,13 +249,3 @@ If using Docker image, rebuild image:
 docker build -t cv_tool:humble .
 ```
 
-## Important current note about model choices
-
-In `cv_tool.py`, the parser currently allows model choices:
-- `lll`
-- `11l_int8`
-- `11n`
-- `11n_int8`
-
-But repository model folders include `11l_openvino_model` (with `11l` naming).
-If `11l` is intended, update parser choices accordingly before using it.

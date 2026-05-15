@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+import yaml
 import cv2
 import rclpy
 from rclpy.node import Node
@@ -12,13 +13,16 @@ from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 from cv_tool_interfaces.action import Detect
 from ultralytics import YOLO
-from .utils import get_3d_keypoints, save_annotated_image, calc_bbox_size, TOOL_CLASS_NAMES
+from ament_index_python.packages import get_package_share_directory
+from . import utils
+from .utils import get_3d_keypoints, save_annotated_image, calc_bbox_size
 
 
 class CVToolActionServer(Node):
     def __init__(self, args):
         super().__init__('cv_tool_action_server')
         self.verbose = args.verbose
+        self.tool_class_names = args.tool_class_names
         self.get_logger().info("CVToolActionServer starting...")
         
         # Images & ROS2 stuff
@@ -40,11 +44,24 @@ class CVToolActionServer(Node):
         )
         
         # YOLO stuff
-        model_path = f'/cv_tool_ws/src/cv_tool/cv_tool/models/{args.model}_openvino_model'
+        model_path = Path(args.model_path)
+        if not model_path.is_absolute():
+            share_dir = Path(get_package_share_directory('cv_tool'))
+            share_candidate = (share_dir / model_path).resolve()
+            module_candidate = (Path(__file__).resolve().parent / model_path).resolve()
+            if share_candidate.exists():
+                model_path = share_candidate
+            elif module_candidate.exists():
+                model_path = module_candidate
+            else:
+                model_path = share_candidate
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model path does not exist: {model_path}")
         self.get_logger().info(f"Loading YOLO model from: {model_path}")
-        self.model = YOLO(model_path, task='detect')  # Initialize the YOLO model
+        self.model = YOLO(str(model_path), task='detect')  # Initialize the YOLO model
         if self.verbose:
-            self.output_path = Path(f'output_images_{args.model}/')
+            model_label = model_path.stem
+            self.output_path = Path(f'output_images_{model_label}/')
             self.output_path.mkdir(exist_ok=True)
         
         # Engineering stuff
@@ -65,8 +82,8 @@ class CVToolActionServer(Node):
                 
         target_tool = goal_handle.request.tool_name
         self.get_logger().info(f'Received goal to detect: {target_tool}')
-        if target_tool not in TOOL_CLASS_NAMES:
-            self.get_logger().error(f"Requested tool '{target_tool}' is not in the known class names: {TOOL_CLASS_NAMES}")
+        if target_tool not in self.tool_class_names:
+            self.get_logger().error(f"Requested tool '{target_tool}' is not in the known class names: {self.tool_class_names}")
             goal_handle.abort()
             result.success = False
             return result
@@ -279,32 +296,93 @@ def float_range_01_to_1(value):
         raise argparse.ArgumentTypeError(f"{value} must be a float between 0.1 and 1.0")
     return fvalue
 
+def load_config(config_path):
+    if not config_path.is_file():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    with config_path.open('r', encoding='utf-8') as config_file:
+        config_data = yaml.safe_load(config_file)
+
+    if not isinstance(config_data, dict):
+        raise ValueError("Config file must contain a YAML mapping of parameters.")
+
+    required_keys = [
+        'rgb_topic',
+        'depth_topic',
+        'model_path',
+        'buffer_size',
+        'conf_thres',
+        'margin_x',
+        'margin_y',
+        'verbose',
+        'tool_class_names',
+        'camera_intrinsics',
+    ]
+    missing_keys = [key for key in required_keys if key not in config_data]
+    if missing_keys:
+        raise ValueError(f"Missing required config keys: {', '.join(missing_keys)}")
+
+    model_path = config_data['model_path']
+    if not isinstance(model_path, str) or not model_path.strip():
+        raise ValueError("'model_path' must be a non-empty string.")
+
+    verbose = config_data['verbose']
+    if not isinstance(verbose, bool):
+        raise ValueError("'verbose' must be a boolean (true/false).")
+
+    tool_class_names = config_data['tool_class_names']
+    if not isinstance(tool_class_names, list) or not tool_class_names:
+        raise ValueError("'tool_class_names' must be a non-empty list of strings.")
+    if not all(isinstance(name, str) and name for name in tool_class_names):
+        raise ValueError("'tool_class_names' entries must be non-empty strings.")
+
+    camera_intrinsics = config_data['camera_intrinsics']
+    if not isinstance(camera_intrinsics, dict):
+        raise ValueError("'camera_intrinsics' must be a mapping with fx, fy, cx, cy, depth_scale.")
+    intrinsics_keys = ['fx', 'fy', 'cx', 'cy', 'depth_scale']
+    missing_intrinsics = [key for key in intrinsics_keys if key not in camera_intrinsics]
+    if missing_intrinsics:
+        raise ValueError(f"'camera_intrinsics' missing keys: {', '.join(missing_intrinsics)}")
+    camera_intrinsics = {key: float(camera_intrinsics[key]) for key in intrinsics_keys}
+
+    return argparse.Namespace(
+        rgb_topic=str(config_data['rgb_topic']),
+        depth_topic=str(config_data['depth_topic']),
+        model_path=model_path.strip(),
+        buffer_size=positive_int(config_data['buffer_size']),
+        conf_thres=float_range_01_to_1(config_data['conf_thres']),
+        margin_x=positive_int(config_data['margin_x']),
+        margin_y=positive_int(config_data['margin_y']),
+        verbose=verbose,
+        tool_class_names=tool_class_names,
+        camera_intrinsics=camera_intrinsics,
+    )
+
 def main(args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--rgb_topic', '-rgb_topic', type=str, default='/camera/camera/color/image_raw',
-                        help="RGB topic to subscribe to. Default: /camera/camera/color/image_raw")
-    parser.add_argument('--depth_topic', '-depth_topic', type=str, default='/camera/camera/depth/image_rect_raw',
-                    help="Depth topic to subscribe to. Default: /camera/camera/depth/image_rect_raw")
-    parser.add_argument('--model', '-model', type=str, help="YOLO model", choices=['lll', '11l_int8', '11n', '11n_int8'], default='11n_int8')
-    parser.add_argument('--buffer_size', '-buffer_size', type=positive_int, default=8, help='A positive integer >0 for the decision buffer size. \
-                        The action is successfull only if the tool is found in buffer_size consecutive frames. Default: 8')
-    parser.add_argument('--conf_thres', '-conf_thres', type=float_range_01_to_1, default=0.2, help='YOLO confidence threshold between 0.1 and 1.0. Default: 0.2')
-    parser.add_argument('--margin_x', '-margin_x', type=positive_int, default=70, help='Horizontal centering tolerance in pixels (>0). Default: 70')
-    parser.add_argument('--margin_y', '-margin_y', type=positive_int, default=70, help='Vertical centering tolerance in pixels (>0). Default: 70')
-    parser.add_argument('--verbose', '-verbose', action='store_true', help='Enable verbosity (debug & save output images).', default=False)
+    parser.add_argument('--config', '-c', type=str, required=True,
+                        help='Path to config.yaml with CV Tool parameters.')
 
     raw_args = args if args is not None else sys.argv
     app_args = remove_ros_args(args=raw_args)[1:]
     parsed_args = parser.parse_args(args=app_args)
-    
-    if parsed_args.verbose:
-        print(f"Verbose mode enabled. Output images will be saved to: output_images_{parsed_args.model}/") 
+    try:
+        config = load_config(Path(parsed_args.config))
+        utils.configure_tool_class_names(config.tool_class_names)
+        utils.configure_camera_intrinsics(config.camera_intrinsics)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Failed to load config: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if config.verbose:
+        model_label = Path(config.model_path).stem
+        print(f"Verbose mode enabled. Output images will be saved to: output_images_{model_label}/")
         print("Parameters:")
-        for arg, value in vars(parsed_args).items():
+        for arg, value in vars(config).items():
             print(f"  {arg}: {value}")
             
     rclpy.init(args=raw_args)
-    cv_tool_action_server = CVToolActionServer(parsed_args)
+    cv_tool_action_server = CVToolActionServer(config)
     executor = MultiThreadedExecutor(num_threads=2)
     executor.add_node(cv_tool_action_server)
     

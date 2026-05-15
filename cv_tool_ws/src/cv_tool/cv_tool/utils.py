@@ -4,30 +4,48 @@ from ultralytics.utils.plotting import Annotator, colors
 import numpy as np
 from geometry_msgs.msg import Point
 
-TOOL_CLASS_NAMES =  [
-"allen_small",
-"allen_large",
-"long_nose_pliers_large",
-"long_nose_pliers_small",
-"wire_stripper",
-"tape_measure",
-"cutting_pliers_large",
-"cutting_pliers_small",
-"combination_wrench",
-"multimeter",
-"screwdriver",
-"rachet"
-]
+TOOL_CLASS_NAMES = []
+FX = None
+FY = None
+CX = None
+CY = None
+DEPTH_SCALE = None
 
-# Hardcoded depth camera intrinsics from /camera/camera/depth/camera_info topic.
-FX = 389.8609924316406
-FY = 389.8609924316406
-CX = 322.15924072265625
-CY = 236.45346069335938
-DEPTH_SCALE = 0.001 # Assuming 1 unit = 1 mm
+def configure_tool_class_names(tool_class_names):
+    if not isinstance(tool_class_names, list) or not tool_class_names:
+        raise ValueError("tool_class_names must be a non-empty list of strings.")
+    if not all(isinstance(name, str) and name for name in tool_class_names):
+        raise ValueError("tool_class_names entries must be non-empty strings.")
+
+    global TOOL_CLASS_NAMES
+    TOOL_CLASS_NAMES = tool_class_names
+
+
+def configure_camera_intrinsics(camera_intrinsics):
+    if not isinstance(camera_intrinsics, dict):
+        raise ValueError("camera_intrinsics must be a mapping with fx, fy, cx, cy, depth_scale.")
+
+    required = ['fx', 'fy', 'cx', 'cy', 'depth_scale']
+    missing = [key for key in required if key not in camera_intrinsics]
+    if missing:
+        raise ValueError(f"camera_intrinsics missing keys: {', '.join(missing)}")
+
+    global FX, FY, CX, CY, DEPTH_SCALE
+    FX = float(camera_intrinsics['fx'])
+    FY = float(camera_intrinsics['fy'])
+    CX = float(camera_intrinsics['cx'])
+    CY = float(camera_intrinsics['cy'])
+    DEPTH_SCALE = float(camera_intrinsics['depth_scale'])
+
+
+def _ensure_intrinsics_configured():
+    if None in (FX, FY, CX, CY, DEPTH_SCALE):
+        raise RuntimeError("Camera intrinsics not configured. Call configure_camera_intrinsics().")
 
 def calc_bbox_size(depth_frame, coords):
     """Calculates the real-world size of a bounding box given its pixel coordinates."""
+
+    _ensure_intrinsics_configured()
     
     x1, y1, x2, y2 = coords
 
@@ -54,6 +72,8 @@ def calc_bbox_size(depth_frame, coords):
 
 def get_3d_keypoints(depth_frame, bbox_coords):
     """Given bounding box coordinates, returns the 3D coordinates of the center, top-left, and bottom-right points."""
+
+    _ensure_intrinsics_configured()
     x1, y1, x2, y2 = bbox_coords
     
     # Crop the depth image based on the bounding box coordinates
@@ -109,6 +129,8 @@ def get_distance_between_pixels(depth_image, u1, v1, u2, v2):
 
 def get_pixel_3d_coordinates(depth_image, u, v):
     """Deprojects a 2D pixel into 3D space."""
+
+    _ensure_intrinsics_configured()
     
     # Ensure coordinates are integers for array indexing
     u, v = int(u), int(v)

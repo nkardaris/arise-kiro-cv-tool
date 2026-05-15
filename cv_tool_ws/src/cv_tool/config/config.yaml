@@ -1,0 +1,27 @@
+rgb_topic: /camera/camera/color/image_raw
+depth_topic: /camera/camera/depth/image_rect_raw
+model_path: models/11n_int8_openvino_model
+buffer_size: 8
+conf_thres: 0.2
+margin_x: 70
+margin_y: 70
+verbose: true
+tool_class_names:
+  - allen_small
+  - allen_large
+  - long_nose_pliers_large
+  - long_nose_pliers_small
+  - wire_stripper
+  - tape_measure
+  - cutting_pliers_large
+  - cutting_pliers_small
+  - combination_wrench
+  - multimeter
+  - screwdriver
+  - rachet
+camera_intrinsics:
+  fx: 389.8609924316406
+  fy: 389.8609924316406
+  cx: 322.15924072265625
+  cy: 236.45346069335938
+  depth_scale: 0.001 # depth image is in millimeters, convert to meters

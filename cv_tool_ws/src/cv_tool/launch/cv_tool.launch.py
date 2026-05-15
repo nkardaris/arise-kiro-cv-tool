@@ -1,8 +1,16 @@
 from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+    config_path = PathJoinSubstitution([
+        FindPackageShare('cv_tool'),
+        'config',
+        'config.yaml',
+    ])
+
     return LaunchDescription([
         Node(
             package='cv_tool',
@@ -10,14 +18,7 @@ def generate_launch_description():
             name='cv_tool_action_server',
             output='screen',
             arguments=[
-                '--rgb_topic', '/camera/camera/color/image_raw',
-                '--depth_topic', '/camera/camera/depth/image_rect_raw',
-                '--model', '11n_int8',
-                '--buffer_size', '8',
-                '--conf_thres', '0.2',
-                '--margin_x', '70',
-                '--margin_y', '70',
-                '--verbose'
+                '--config', config_path,
             ],
         )
     ])
