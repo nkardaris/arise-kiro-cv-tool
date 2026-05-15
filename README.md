@@ -1,7 +1,9 @@
 # cv_tool (ROS 2 + Docker)
 
 Action server for image-based tool detection used in the ARISE-KIRO project.
-The node subscribes to RGB and depth camera topics, runs a YOLO OpenVINO model, and serves detection results through a ROS 2 action.
+<!--- The node subscribes to RGB and depth camera topics, runs a custom YOLO model, and serves detection results through a ROS 2 action. -->
+
+This ROS2 package detects industrial tools for robot picking. Implemented as an action server, it leverages Ultralytics YOLO and camera depth data to deproject 2D bounding boxes into real-world metric dimensions. After it receives a request, it continuously detects all tools in the camera's field of view and estimates their size until the target tool is identified. A detection is considered valid if the tool remains physically centered in the camera's view within a configurable pixel margin for a consecutive sequence of frames.
 
 ## Quick Start
 
