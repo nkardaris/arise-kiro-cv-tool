@@ -1,5 +1,11 @@
 # cv_tool (ROS 2 + Docker)
 
+![Vulcanexus](https://img.shields.io/badge/vulcanexus-humble-4b4bcb)
+![Humble](https://img.shields.io/badge/ros2-humble-0b4d91)
+![License](https://img.shields.io/badge/license-AGPL--3.0-green)
+![Build](https://img.shields.io/badge/build-manual-lightgrey)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED)
+
 Action server for image-based tool detection used in the ARISE-KIRO project.
 <!--- The node subscribes to RGB and depth camera topics, runs a custom YOLO model, and serves detection results through a ROS 2 action. -->
 
