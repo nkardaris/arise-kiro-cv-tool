@@ -11,4 +11,4 @@ COPY cv_tool_ws/src/ ./src/
 
 RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install"
 
-#CMD ["/bin/bash", "-lc", "source /cv_tool_ws/install/setup.bash && exec ros2 launch cv_tool cv_tool.launch.py"]
+CMD ["/bin/bash", "-lc", "source /cv_tool_ws/install/setup.bash && exec ros2 launch cv_tool cv_tool.launch.py"]
