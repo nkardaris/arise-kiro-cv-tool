@@ -1,19 +1,21 @@
 # 03 — Installation & hello world
 
 The supported and recommended runtime is **Docker** (Vulcanexus Humble image). A native ROS 2
-Humble path is also documented.
+Humble path is also documented. The **hello world** here is minimal — it only confirms the install
+works and the node runs. To see real detections, run the **demo** in
+[`04_basic_demo_how_to_use.md`](04_basic_demo_how_to_use.md).
 
 ## Dependencies
 
-| Category | Hello world (rosbag replay) | Full demo (live camera) | Where |
+| Category | Hello world (no hardware/bag) | Demo (sample rosbag) | Where |
 |---|---|---|---|
 | Operating system | Ubuntu 22.04 (via image) | Ubuntu 22.04 | Docker base image |
 | ROS 2 / Vulcanexus | Vulcanexus Humble | Vulcanexus Humble | `eprosima/vulcanexus:humble-desktop` |
 | Python deps | `ultralytics`, `openvino`, `torch` (CPU), `numpy<2`, `lap` | same | [`Dockerfile`](../Dockerfile) |
 | System deps | `python3-opencv`, `ffmpeg` | same | `Dockerfile` |
-| ROS deps | `cv_bridge`, `sensor_msgs`, `geometry_msgs`, `rclpy`, `rosbag2` | same (minus rosbag2) | `package.xml` |
-| Hardware | **none** (recorded bag) | Intel RealSense (or compatible) RGB-D camera | — |
-| Data | demo rosbag (external download) | live camera | [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md) |
+| ROS deps | `cv_bridge`, `sensor_msgs`, `geometry_msgs`, `rclpy` | same **+ `rosbag2`** | `package.xml` |
+| Hardware | **none** | **none** (recorded bag) | — |
+| Data | **none** | demo rosbag (external download) | [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md) |
 
 > Why Docker: `ultralytics` / `openvino` / `torch` are pip-only (no rosdep keys) and are pinned in
 > the Dockerfile, so the container gives a reproducible environment without manual dependency setup.
@@ -26,71 +28,42 @@ docker build -t cv_tool:humble .
 ```
 
 The image copies `cv_tool_ws/src/`, runs `colcon build --symlink-install`, and sets the default
-`CMD` to launch the live-camera node.
+`CMD` to launch the action server (the hello world below).
 
-## Hello world — replay the demo rosbag (no hardware)
+## Hello world — start the server (no hardware)
 
-1. **Download the demo rosbag** (`boxes_0.db3`) — see
-   [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md) for the link and
-   details (RealSense RGB-D, ~71 s @ 15 Hz, topics already matching the config).
+The hello world just proves that everything is installed and the node comes up — **no camera and no
+rosbag**.
 
-2. **Run the container, mounting the bag folder:**
-
-   ```bash
-   docker run --rm -it --net=host \
-       -v /absolute/path/to/rosbags:/cv_tool_ws/bags \
-       cv_tool:humble bash
-   ```
-
-3. **(Once, if needed) regenerate the bag index** if the download has no `metadata.yaml`:
-
-   ```bash
-   ros2 bag reindex /cv_tool_ws/bags -s sqlite3
-   ```
-
-4. **Replay the bag and start the server:**
-
-   ```bash
-   source /cv_tool_ws/install/setup.bash
-   ros2 launch cv_tool cv_tool_replay.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
-   ```
-
-5. **Send a goal** from a second shell into the same container:
-
-   ```bash
-   docker exec -it <container_id> bash
-   source /cv_tool_ws/install/setup.bash
-   ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect \
-       "{tool_name: screwdriver}" --feedback
-   ```
+```bash
+docker run --rm -it --net=host cv_tool:humble
+```
 
 ### Expected output
 
-Server log:
+Within a few seconds the server logs:
 
 ```
+Logging console output to logs/<DATE>_<TIME>.log
 [cv_tool_action_server]: CVToolActionServer starting...
 [cv_tool_action_server]: Loading YOLO model from: /.../share/cv_tool/models/11n_int8_openvino_model
 [cv_tool_action_server]: CVToolActionServer ready. Waiting for goals...
-[cv_tool_action_server]: Received goal to detect: screwdriver
-[cv_tool_action_server]: screwdriver found and centered!
 ```
 
-Action client:
+Seeing `CVToolActionServer ready. Waiting for goals...` confirms the dependencies (rclpy, OpenCV,
+Ultralytics/OpenVINO/Torch), the bundled model, and the ROS 2 action server all loaded correctly.
+Stop with `Ctrl-C`.
 
-```
-Feedback: current_status: 'Scanning frame 12 for screwdriver...'
-...
-Result:
-  success: true
-  center: {x: ..., y: ..., z: ...}
-  top_left: {x: ..., y: ..., z: ...}
-  bottom_right: {x: ..., y: ..., z: ...}
-  confidence: 0.9...
-```
+**Optional confirmation** that the action interface is alive — in a second shell into the container
+(`docker exec -it <container_id> bash`, then `source /cv_tool_ws/install/setup.bash`):
 
-A successful goal is the evidence that installation works. (Try other tools from
-`tool_class_names`; the bag is named *boxes* and contains the KIRO tool set in trays.)
+```bash
+ros2 action info /detect_tool -t          # lists cv_tool_action_server as the action server
+# or send a goal (with no camera/bag this aborts — expected):
+ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: screwdriver}"
+#   -> server warns "No camera feed available" and the goal is aborted. This is expected without
+#      input data and still proves the server received and handled the goal.
+```
 
 ## Native (no Docker)
 
@@ -101,16 +74,21 @@ pip3 install ultralytics "numpy<2.0.0" "lap>=0.5.12" "openvino>=2024.0.0" \
     torch==2.0.0 torchvision==0.15.1 --index-url https://download.pytorch.org/whl/cpu
 colcon build --symlink-install
 source install/setup.bash
-ros2 launch cv_tool cv_tool_replay.launch.py bag_path:=/path/to/boxes_0.db3
+ros2 launch cv_tool cv_tool.launch.py    # hello world: starts the server (no camera/bag)
 ```
+
+## Next: the demo
+
+To exercise real detection end-to-end (download + replay the sample rosbag, send goals, read the
+3D results), continue to [`04_basic_demo_how_to_use.md`](04_basic_demo_how_to_use.md).
 
 ## Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
-| Goal aborts: *"No camera feed available"* | The bag isn't playing or topics don't match. Check `ros2 topic hz /camera/camera/color/image_raw`; verify `bag_path` and that replay started. |
-| `ros2 bag play` errors about missing metadata | Run `ros2 bag reindex /cv_tool_ws/bags -s sqlite3`. |
-| Warning: *"No depth feed available"* | Depth topic missing/misnamed; 3D points/size disambiguation will be unreliable. Check `depth_topic`. |
-| Goal never succeeds | The target tool may not be present/centered in the loop window; try another `tool_name`, lower `conf_thres`, or raise `margin_x/y`. |
+| Goal aborts: *"No camera feed available"* | Expected in the hello world (no input). In the **demo**, the bag isn't playing or topics don't match — check `ros2 topic hz /camera/camera/color/image_raw`, `bag_path`, and that replay started. |
+| `ros2 bag play` errors about missing metadata (demo) | Run `ros2 bag reindex /cv_tool_ws/bags -s sqlite3`. |
+| Warning: *"No depth feed available"* (demo) | Depth topic missing/misnamed; 3D points/size disambiguation will be unreliable. Check `depth_topic`. |
+| Goal never succeeds (demo) | The target tool may not be present/centered in the loop window; try another `tool_name`, lower `conf_thres`, or raise `margin_x/y`. |
 | Nodes don't see each other | DDS discovery — use `--net=host`; align `ROS_DOMAIN_ID` across shells. |
 | Set `verbose: true` | Saves annotated RGB+depth frames to `output_images_<model>/` for inspection. |

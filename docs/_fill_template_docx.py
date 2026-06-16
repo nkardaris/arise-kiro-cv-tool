@@ -176,8 +176,8 @@ fill(T[16], [
     ["Result", "success/center/top_left/bottom_right/confidence", "bool / geometry_msgs/Point ×3 / float32",
      "3D keypoints (camera color optical frame) + confidence"],
     ["Feedback", "current_status", "string", "Scan progress, e.g. 'Scanning frame N...'"],
-    ["Launch file", "cv_tool.launch.py / cv_tool_replay.launch.py", "launch",
-     "Live camera (full demo) / rosbag replay (hello world)"],
+    ["Launch file", "cv_tool.launch.py / cv_tool_demo.launch.py", "launch",
+     "Hello world: start server (no camera/bag) / Demo: rosbag replay"],
 ])
 
 # =========================================================================== 3.2.6 FIWARE entity table
@@ -224,8 +224,8 @@ fill(T[21], [
      "Dockerfile / package.xml"],
     ["Docker", "Yes", "Yes", "Dockerfile"],
     ["FIWARE / Context Broker", "N/A", "N/A", "docs/02_interfaces.md"],
-    ["Hardware", "None (recorded bag)", "Intel RealSense RGB-D", "examples/bags/README.md"],
-    ["Simulation or recorded data", "rosbag2 (RealSense recording)", "live camera",
+    ["Hardware", "None", "None (recorded bag); Intel RealSense for a live camera", "examples/bags/README.md"],
+    ["Simulation or recorded data", "None", "rosbag2 (RealSense recording, external download)",
      "examples/bags/README.md"],
 ])
 
@@ -240,10 +240,12 @@ fill(T[22], [
     "Finding and precisely localizing a specific requested tool among many in trays/boxes during "
     "robotic tool delivery — including size-ambiguous tools — so a manipulator can grasp it.",
     "Real-time (~15 fps CPU) tool detection + 3D localization via one ROS 2 action; size "
-    "disambiguation; centering-stability gating; a bundled model and a no-hardware rosbag demo.",
+    "disambiguation; centering-stability gating; a bundled model, a minimal no-hardware hello world "
+    "and a rosbag demo.",
     "Robotics developers / integrators building pick-and-deliver or bin-picking pipelines on "
     "ROS 2 / Vulcanexus; the Vulcanexus community; ARISE ecosystem adopters.",
-    "Docker (Vulcanexus Humble) + recorded RealSense rosbag replay — no camera or robot required.",
+    "Docker (Vulcanexus Humble): the hello world starts the server with no camera/bag; the demo "
+    "additionally replays a recorded RealSense rosbag. Neither needs a camera or robot.",
     "KIRO D3 pilot at IKH: F1 96.88%, mAP 97.35%, 20/20 tool queries detected; demonstrator "
     "video (TODO).",
 ], right_only=True)
@@ -330,20 +332,21 @@ fill(T[29], [
 # =========================================================================== 3.3.7 execution evidence
 fill(T[30], [
     "Docker build of the Vulcanexus image; native colcon path also documented (docs/03).",
-    "Replay the recorded RealSense rosbag + send a Detect goal; returns success:true with 3D "
-    "points. No hardware needed.",
-    "Different tools, size disambiguation, centering behaviour, verbose annotated output "
-    "(docs/04).",
+    "Start the server with 'docker run cv_tool:humble'; it loads the model and logs "
+    "'CVToolActionServer ready' — no camera or bag needed (docs/03).",
+    "Replay the downloaded RealSense rosbag (cv_tool_demo.launch.py) + send a Detect goal -> "
+    "success:true with 3D points; plus size-disambiguation and centering scenarios (docs/04).",
 ], right_only=True)
 # rows 4-5 (Simulation/mock path, Troubleshooting) also key/value
 set_cell(T[30].rows[4].cells[1],
-    "Recorded RealSense rosbag (external download) replayed via cv_tool_replay.launch.py.")
+    "Recorded RealSense rosbag (external download) replayed via cv_tool_demo.launch.py.")
 set_cell(T[30].rows[5].cells[1],
     "Documented failure modes (no feed, missing bag metadata, DDS discovery) in docs/03.")
 set_para_text("summarise the installation and execution evidence",
-    "Installation and execution evidence: building the Docker image and replaying the recorded "
-    "RealSense rosbag exercises the full pipeline without any hardware. With the bag mounted, "
-    "'ros2 launch cv_tool cv_tool_replay.launch.py' plus a Detect goal yields 'Scanning frame N...' "
+    "Installation and execution evidence: the hello world ('docker run cv_tool:humble') starts the "
+    "server, loads the model and logs 'CVToolActionServer ready' — confirming the install with no "
+    "hardware or bag. The demo then replays the downloaded RealSense rosbag: with the bag mounted, "
+    "'ros2 launch cv_tool cv_tool_demo.launch.py' plus a Detect goal yields 'Scanning frame N...' "
     "feedback and then a success result carrying the tool's 3D center/top-left/bottom-right points "
     "and confidence — reproducing the behaviour validated in the KIRO D3 pilot (F1 96.88%, mAP "
     "97.35%, 20/20 queries).")
@@ -410,7 +413,8 @@ fill(T[35], [
 ])
 fill(T[36], [
     "Platform-agnostic action interface; only consumes camera topics.",
-    "Docker image + hardware-free rosbag hello world with documented expected output.",
+    "Docker image: minimal no-hardware hello world plus a rosbag demo, both with documented "
+    "expected output.",
     "ROS 2/Vulcanexus core; FIWARE/DDS/ROS4HRI justified N/A.",
     "Packaged reusable HRI perception capability + Docker/rosbag demo; candidate Vulcanexus example.",
     "D3 pilot metrics + (TODO) demonstrator video.",

@@ -1,9 +1,66 @@
 # 04 — Basic demo & how to use
 
-The hello world ([`03`](03_installation_and_hello_world.md)) proves the install works. This page
-shows how to *use* the module: configure it, request different tools, and read its output. All
-commands run inside the Docker container with the demo rosbag replaying
-(`ros2 launch cv_tool cv_tool_replay.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3`).
+The hello world ([`03`](03_installation_and_hello_world.md)) proves the install works. The **demo**
+shows the module producing real detections — without any hardware — by replaying a recorded
+RealSense RGB-D rosbag. This page covers the demo setup and then how to *use* the module: request
+different tools, exercise size disambiguation and centering, and read the output.
+
+## Set up the demo
+
+1. **Download the sample rosbag** (`boxes_0.db3`) — link and details (RealSense RGB-D, ~71 s @ 15 Hz,
+   topics already matching the config) in
+   [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md).
+
+2. **Run the container with the bag folder mounted:**
+
+   ```bash
+   docker run --rm -it --net=host \
+       -v /absolute/path/to/rosbags:/cv_tool_ws/bags \
+       cv_tool:humble bash
+   ```
+
+3. **(Once, if the download has no `metadata.yaml`)** regenerate the index:
+
+   ```bash
+   ros2 bag reindex /cv_tool_ws/bags -s sqlite3
+   ```
+
+4. **Replay the bag and start the server:**
+
+   ```bash
+   source /cv_tool_ws/install/setup.bash
+   ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
+   ```
+
+5. **Send a goal** from a second shell into the same container
+   (`docker exec -it <container_id> bash` → `source /cv_tool_ws/install/setup.bash`):
+
+   ```bash
+   ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect \
+       "{tool_name: screwdriver}" --feedback
+   ```
+
+   Expected server log:
+
+   ```
+   [cv_tool_action_server]: Received goal to detect: screwdriver
+   [cv_tool_action_server]: screwdriver found and centered!
+   ```
+
+   Expected action client result:
+
+   ```
+   Feedback: current_status: 'Scanning frame 12 for screwdriver...'
+   ...
+   Result:
+     success: true
+     center: {x: ..., y: ..., z: ...}
+     top_left: {x: ..., y: ..., z: ...}
+     bottom_right: {x: ..., y: ..., z: ...}
+     confidence: 0.9...
+   ```
+
+The scenarios below all run with this replay active.
 
 ## Scenario A — request different tools
 
