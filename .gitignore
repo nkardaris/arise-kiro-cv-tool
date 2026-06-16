@@ -28,3 +28,13 @@ Thumbs.db
 # Runtime/debug outputs
 output_images_*/
 *.log
+
+# Recorded rosbags are distributed as external downloads, never committed (see
+# cv_tool_ws/src/cv_tool/examples/bags/README.md)
+*.db3
+*.mcap
+**/bags/**/metadata.yaml
+
+# Word documents (D4 report + template) are submission artifacts, kept out of git.
+# Regenerate the filled report with docs/_fill_template_docx.py.
+*.docx

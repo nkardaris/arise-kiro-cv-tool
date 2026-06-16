@@ -5,11 +5,6 @@ import os
 
 package_name = 'cv_tool'
 
-model_files = []
-for path in Path('cv_tool/models').rglob('*'):
-    if path.is_file():
-        model_files.append(path)
-
 data_files = [
     ('share/ament_index/resource_index/packages',
         ['resource/' + package_name]),
@@ -18,22 +13,38 @@ data_files = [
     (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
 ]
 
-for path in model_files:
-    rel_dir = path.parent.relative_to('cv_tool')
-    install_dir = os.path.join('share', package_name, str(rel_dir))
-    data_files.append((install_dir, [str(path)]))
+
+def install_tree(source_root, dest_root):
+    """Install every file under source_root into dest_root, preserving structure."""
+    for path in Path(source_root).rglob('*'):
+        if path.is_file():
+            rel_dir = path.parent.relative_to(source_root)
+            install_dir = os.path.normpath(
+                os.path.join('share', package_name, dest_root, str(rel_dir)))
+            data_files.append((install_dir, [str(path)]))
+
+
+# Ship the bundled YOLO/OpenVINO model(s) and the example assets (recorded rosbag,
+# sample payloads, hello-world helpers) inside the package share.
+install_tree('cv_tool/models', 'models')
+if Path('examples').is_dir():
+    install_tree('examples', 'examples')
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.1.0',
     packages=find_packages(exclude=['test']),
     data_files=data_files,
     install_requires=['setuptools', 'pyyaml'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='root@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Nikos Kardaris',
+    maintainer_email='nick.kardaris@gmail.com',
+    description=(
+        'ARISE-KIRO tool recognition module: a ROS 2 / Vulcanexus action server that detects '
+        'industrial tools for robotic picking using Ultralytics YOLO (OpenVINO) and deprojects '
+        '2D bounding boxes into 3D metric coordinates using aligned RGB-D camera data.'
+    ),
+    license='AGPL-3.0-or-later',
     extras_require={
         'test': [
             'pytest',
@@ -41,7 +52,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'cv_tool = cv_tool.cv_tool:main'
+            'cv_tool = cv_tool.cv_tool:main',
         ],
     },
 )
