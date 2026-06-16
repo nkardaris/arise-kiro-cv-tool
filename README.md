@@ -23,8 +23,9 @@ allen key) even when the model emits a generic class.
   localization for manipulation, with size disambiguation and centering-stability gating.
 
 > **New here?** Read this README top-to-bottom (≈10 min), then the detailed pages under
-> [`docs/`](docs/). The fastest way to see it run without any hardware is the
-> [hardware-free hello world](#hardware-free-hello-world-no-camera-needed).
+> [`docs/`](docs/). The quickest check that everything installed is the
+> [hello world](#hello-world-minimal-no-hardware) (no camera, no bag); to see real detections, run
+> the [demo](#demo-sample-rosbag).
 
 ---
 
@@ -83,50 +84,66 @@ project (Grant Agreement No. 101135784).
 
 ---
 
-## Hardware-free hello world (no camera needed)
+## Hello world (minimal, no hardware)
 
-The hello world replays a recorded RealSense RGB-D rosbag, so it runs **without the camera or the
-robot**. The bag is an **external download** (raw RGB-D is too large for git) — get it and its
-topic details from [`examples/bags/README.md`](cv_tool_ws/src/cv_tool/examples/bags/README.md).
+The hello world just confirms everything is **installed and running** — no camera, no rosbag. The
+default Docker `CMD` launches the action server, which loads the YOLO/OpenVINO model and waits for
+goals.
 
 ```bash
 # 1) Build the Docker image (from repo root)
 docker build -t cv_tool:humble .
 
-# 2) Run the container, mounting the folder that holds the downloaded bag
+# 2) Start the action server
+docker run --rm -it --net=host cv_tool:humble
+```
+
+**Success looks like** the server logging, within a few seconds:
+
+```
+Logging console output to logs/<DATE>_<TIME>.log
+[cv_tool_action_server]: Loading YOLO model from: /.../share/cv_tool/models/11n_int8_openvino_model
+[cv_tool_action_server]: CVToolActionServer ready. Waiting for goals...
+```
+
+That confirms the dependencies (rclpy, OpenCV, Ultralytics/OpenVINO/Torch), the bundled model, and
+the ROS 2 action server all load correctly. Stop with `Ctrl-C`.
+
+> Optional: in a second shell, `ros2 action info /detect_tool -t` lists the server. Sending a goal
+> now aborts with *"No camera feed available"* — that is **expected** (no camera/bag connected) and
+> still proves the action interface responds. To see real detections, run the demo below.
+
+## Demo (sample rosbag)
+
+The demo replays a recorded RealSense RGB-D rosbag so you get **real detections without any
+hardware**. The bag is an **external download** (raw RGB-D is too large for git) — get the link and
+topic details from [`examples/bags/README.md`](cv_tool_ws/src/cv_tool/examples/bags/README.md).
+
+```bash
+# 1) Run the container, mounting the folder that holds the downloaded bag
 docker run --rm -it --net=host \
     -v /absolute/path/to/rosbags:/cv_tool_ws/bags \
     cv_tool:humble bash
 
-# 3) Inside the container — replay the bag + start the action server
+# 2) Inside the container — replay the bag + start the action server
 source /cv_tool_ws/install/setup.bash
-ros2 launch cv_tool cv_tool_replay.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
+ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
 
-# 4) In a second shell into the same container, request a tool
+# 3) In a second shell into the same container, request a tool
 docker exec -it <container> bash
 source /cv_tool_ws/install/setup.bash
 ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect \
     "{tool_name: screwdriver}" --feedback
 ```
 
-Expected: the server logs `CVToolActionServer ready`, emits `Scanning frame N for screwdriver...`
-feedback, then `screwdriver found and centered!` and returns `success: true` with three 3D points
-and a confidence score. Full walkthrough and troubleshooting:
-[`docs/03_installation_and_hello_world.md`](docs/03_installation_and_hello_world.md).
+Expected: `Scanning frame N for screwdriver...` feedback, then `screwdriver found and centered!`,
+returning `success: true` with three 3D points and a confidence score. Full walkthrough and
+scenarios: [`docs/04_basic_demo_how_to_use.md`](docs/04_basic_demo_how_to_use.md).
 
 > If the downloaded bag has no `metadata.yaml`, run `ros2 bag reindex /cv_tool_ws/bags -s sqlite3`
-> once before launching.
-
-## Run with a live camera (full demo)
-
-```bash
-docker run --rm -it --net=host cv_tool:humble
-# container CMD launches: ros2 launch cv_tool cv_tool.launch.py
-```
-
-This expects a RealSense (or compatible) driver publishing the topics in
-[`config/config.yaml`](cv_tool_ws/src/cv_tool/config/config.yaml). `--net=host` is used for DDS
-discovery. If your setup uses a non-default ROS domain, `export ROS_DOMAIN_ID=<id>` in every shell.
+> once before launching. The same `docker run --rm -it --net=host cv_tool:humble` also works against
+> a **live RealSense camera** publishing the topics in
+> [`config/config.yaml`](cv_tool_ws/src/cv_tool/config/config.yaml).
 
 ## Build and run without Docker
 
@@ -225,7 +242,7 @@ width/height threshold).
     ├── cv_tool/                # Python action server, launch files, config, model, examples
     │   ├── cv_tool/            # node + utils
     │   ├── config/config.yaml
-    │   ├── launch/             # cv_tool.launch.py, cv_tool_replay.launch.py
+    │   ├── launch/             # cv_tool.launch.py, cv_tool_demo.launch.py
     │   └── examples/bags/      # how to fetch + replay the demo rosbag (external download)
     └── cv_tool_interfaces/     # Detect.action definition
 ```

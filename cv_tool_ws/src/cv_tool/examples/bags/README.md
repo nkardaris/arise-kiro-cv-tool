@@ -1,9 +1,11 @@
 # Demo rosbag (external download)
 
-The hardware-free hello world and basic demo replay a **recorded Intel RealSense RGB-D
-rosbag** captured during the KIRO pilot at IKH. Because raw RGB-D recordings are large
-(~1.6 GB for ~71 s), the bag is **not stored in this git repository**. It is distributed as
-an external download and listed as an *external dependency* of the demo.
+The **demo** ([`docs/04`](../../../../../docs/04_basic_demo_how_to_use.md)) replays a **recorded Intel
+RealSense RGB-D rosbag** captured during the KIRO pilot at IKH. (The hello world does **not** need
+this bag — it just starts the server; see [`docs/03`](../../../../../docs/03_installation_and_hello_world.md).)
+Because raw RGB-D recordings are large (~1.6 GB for ~71 s), the bag is **not stored in this git
+repository**. It is distributed as an external download and listed as an *external dependency* of the
+demo.
 
 ## Download
 
@@ -41,7 +43,7 @@ ros2 bag reindex /cv_tool_ws/bags -s sqlite3
 
 ```bash
 # Terminal 1 (inside the container): replay the bag + start the action server
-ros2 launch cv_tool cv_tool_replay.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
+ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
 
 # Terminal 2 (inside the container): request a tool
 source /cv_tool_ws/install/setup.bash
@@ -49,6 +51,5 @@ ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect \
     "{tool_name: screwdriver}" --feedback
 ```
 
-See [`docs/03_installation_and_hello_world.md`](../../../../../docs/03_installation_and_hello_world.md)
-and [`docs/04_basic_demo_how_to_use.md`](../../../../../docs/04_basic_demo_how_to_use.md) for the
-full walkthrough and expected output.
+See [`docs/04_basic_demo_how_to_use.md`](../../../../../docs/04_basic_demo_how_to_use.md) for the full
+demo walkthrough and expected output.

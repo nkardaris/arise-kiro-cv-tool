@@ -27,6 +27,7 @@ Thumbs.db
 
 # Runtime/debug outputs
 output_images_*/
+logs/
 *.log
 
 # Recorded rosbags are distributed as external downloads, never committed (see

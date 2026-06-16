@@ -65,7 +65,7 @@ documented in the repo: [README](../README.md), [`docs/02_interfaces.md`](02_int
 | What problem does it solve? | During robotic tool delivery, finding and precisely localizing a specific requested tool among many in trays/boxes, including size-ambiguous tools, so a manipulator can grasp it reliably. |
 | What does it provide off-the-shelf? | Real-time (≈15 fps CPU) tool detection + 3D localization via a single ROS 2 action; size disambiguation; centering-stability gating; a bundled model and a no-hardware rosbag demo. |
 | Who is the intended user? | Robotics developers / integrators building pick-and-deliver or bin-picking pipelines on ROS 2/Vulcanexus; the Vulcanexus community; ARISE ecosystem adopters. |
-| Minimum reproducible execution path | Docker (Vulcanexus Humble) + recorded RealSense rosbag replay — no camera or robot required. |
+| Minimum reproducible execution path | Docker (Vulcanexus Humble): the hello world starts the server with no camera or bag; the demo additionally replays a recorded RealSense rosbag. Neither needs a camera or robot. |
 | Main evidence of validation | KIRO D3 pilot at IKH: F1 96.88 %, mAP 97.35 %, 20/20 tool queries detected; demonstrator video (TODO). |
 
 ### 3.3.2 Relation with ARISE and previous milestones
@@ -128,11 +128,13 @@ keypoints + confidence — status *implemented/tested*.
 
 ### 3.3.7 Installation, hello world & demo evidence
 
-Docker build → run with the demo rosbag mounted → `cv_tool_replay.launch.py` → `Detect` action goal
-returns `success: true` with 3D points. Full commands and expected output:
-[`docs/03_installation_and_hello_world.md`](03_installation_and_hello_world.md) and
-[`docs/04_basic_demo_how_to_use.md`](04_basic_demo_how_to_use.md). The hello world needs **no
-hardware** (recorded RealSense bag). Troubleshooting and a simulation/mock path are documented.
+**Hello world (minimal, no hardware/bag):** `docker build` → `docker run cv_tool:humble` starts the
+server, which loads the model and logs `CVToolActionServer ready. Waiting for goals...` — confirming
+the install. **Demo (sample rosbag):** run with the downloaded RealSense rosbag mounted →
+`cv_tool_demo.launch.py` → a `Detect` goal returns `success: true` with 3D points. Full commands and
+expected output: [`docs/03_installation_and_hello_world.md`](03_installation_and_hello_world.md)
+(hello world) and [`docs/04_basic_demo_how_to_use.md`](04_basic_demo_how_to_use.md) (demo).
+Troubleshooting and a simulation/recorded-data path are documented.
 
 ### 3.3.8 Role in the TRL6-7 demonstrator
 
@@ -183,7 +185,7 @@ Extraction vs demonstrator-specific parts: see
 | Area | Evidence |
 |---|---|
 | Reusability | Platform-agnostic action interface; only consumes camera topics. |
-| Reproducibility | Docker image + hardware-free rosbag hello world with expected output. |
+| Reproducibility | Docker image: minimal no-hardware hello world plus a rosbag demo, both with documented expected output. |
 | ARISE interoperability | ROS 2/Vulcanexus core; FIWARE/DDS/ROS4HRI justified N/A. |
 | Contribution to Vulcanexus | Packaged reusable HRI perception capability + Docker/rosbag demo. |
 | Validation | D3 pilot metrics + (TODO) demonstrator video. |

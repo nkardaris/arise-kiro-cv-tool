@@ -64,7 +64,7 @@ Parameters are provided through a YAML config passed with `--config`, not as ROS
 | File | Purpose |
 |---|---|
 | [`launch/cv_tool.launch.py`](../cv_tool_ws/src/cv_tool/launch/cv_tool.launch.py) | Start the action server with the installed config (live-camera / full demo). |
-| [`launch/cv_tool_replay.launch.py`](../cv_tool_ws/src/cv_tool/launch/cv_tool_replay.launch.py) | Replay the demo rosbag (`bag_path` arg) **and** start the server — hardware-free hello world. |
+| [`launch/cv_tool_demo.launch.py`](../cv_tool_ws/src/cv_tool/launch/cv_tool_demo.launch.py) | Replay the demo rosbag (`bag_path` arg) **and** start the server — the hardware-free demo. |
 
 ---
 

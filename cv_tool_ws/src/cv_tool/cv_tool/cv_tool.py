@@ -1,5 +1,9 @@
 import argparse
+import atexit
+import os
 import sys
+import threading
+from datetime import datetime
 from pathlib import Path
 import yaml
 import cv2
@@ -358,7 +362,80 @@ def load_config(config_path):
         camera_intrinsics=camera_intrinsics,
     )
 
+def setup_tee_logging(log_dir='logs'):
+    """Mirror everything written to stdout/stderr into a timestamped logfile.
+
+    The ROS 2 (rclpy) logger writes to stderr at the C level (fd 2), bypassing Python's
+    ``sys.stderr`` object, so a Python-level stream wrapper would miss most output. Instead we
+    redirect file descriptors 1 and 2 through a pipe and mirror the bytes to both the original
+    terminal and the logfile. Console output is preserved unchanged. Returns the logfile path.
+    """
+    os.makedirs(log_dir, exist_ok=True)
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_path = os.path.join(log_dir, f'{ts}.log')
+    logfile = open(log_path, 'wb', buffering=0)
+
+    # Keep a handle to the real terminal, then route fd 1 and 2 through a pipe.
+    term = os.fdopen(os.dup(1), 'wb', buffering=0)
+    read_fd, write_fd = os.pipe()
+    os.dup2(write_fd, 1)
+    os.dup2(write_fd, 2)
+    os.close(write_fd)
+
+    def pump():
+        while True:
+            try:
+                data = os.read(read_fd, 65536)
+            except OSError:
+                break
+            if not data:  # EOF: all write-ends (fds 1 and 2) closed
+                break
+            for sink in (term, logfile):
+                sink.write(data)
+                sink.flush()
+
+    pump_thread = threading.Thread(target=pump, name='tee-logger', daemon=True)
+    pump_thread.start()
+
+    # fd 1 is now a pipe (not a TTY); avoid Python block-buffering print() output.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, 'reconfigure', None)
+        if reconfigure is not None:
+            try:
+                reconfigure(line_buffering=True)
+            except Exception:
+                pass
+
+    def drain():
+        # Flush Python buffers, then point fds 1 and 2 at /dev/null. This closes the pipe
+        # write-ends so the pump reads EOF and drains the tail (e.g. on a fast sys.exit),
+        # while late writes go to /dev/null instead of erroring.
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except Exception:
+                pass
+        try:
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, 1)
+            os.dup2(devnull, 2)
+            os.close(devnull)
+        except OSError:
+            pass
+        pump_thread.join(timeout=2)
+        try:
+            logfile.close()
+        except Exception:
+            pass
+
+    atexit.register(drain)
+    return log_path
+
+
 def main(args=None):
+    log_path = setup_tee_logging()
+    print(f"Logging console output to {log_path}")
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', '-c', type=str, required=True,
                         help='Path to config.yaml with CV Tool parameters.')
