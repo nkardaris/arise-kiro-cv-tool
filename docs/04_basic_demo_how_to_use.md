@@ -7,50 +7,57 @@ different tools, exercise size disambiguation and centering, and read the output
 
 ## Set up the demo
 
-1. **Download the sample rosbag** (`boxes_0.db3`) — link and details (RealSense RGB-D, ~71 s @ 15 Hz,
-   topics already matching the config) in
-   [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md).
+1. **Download the sample rosbag.** The bag is a **571 MB zip** containing `boxes_0.db3` and
+   `boxes_0.yaml` (the bag metadata — no reindex needed):
 
-2. **Run the container with the bag folder mounted:**
+   **[Download boxes_0.zip](https://ntuagr-my.sharepoint.com/:u:/g/personal/nkardaris_ntua_gr/IQDsEQU6eugvT6m96_PWqJ7IARBPkaxEnLrxamZVtcMAVe0?download=1)**
+
+   Unzip into a folder on your host (e.g. `~/rosbags/`) so you have `~/rosbags/boxes_0.db3` and
+   `~/rosbags/boxes_0.yaml`.
+
+   > **Topics in the bag:** `/camera/camera/color/image_raw` (`sensor_msgs/Image`, `bgr8`) and
+   > `/camera/camera/depth/image_rect_raw` (`sensor_msgs/Image`, `16UC1`, mm) — these match the
+   > defaults in `config/config.yaml`, so no remapping is required.
+
+2. **Run the container with the bag folder and an output folder mounted:**
 
    ```bash
    docker run --rm -it --net=host \
-       -v /absolute/path/to/rosbags:/cv_tool_ws/bags \
+       -v /absolute/path/to/rosbags:/cv_tool_ws/rosbags \
+       -v /absolute/path/to/output:/cv_tool_ws/output_images \
        cv_tool:humble bash
    ```
 
-3. **(Once, if the download has no `metadata.yaml`)** regenerate the index:
+   The second `-v` maps the container's annotated-image output directory to a host folder so you
+   can view the saved frames directly. Images are written there only when `verbose: true` is set
+   in `config.yaml`.
 
-   ```bash
-   ros2 bag reindex /cv_tool_ws/bags -s sqlite3
-   ```
-
-4. **Replay the bag and start the server:**
+3. **Replay the bag and start the server:**
 
    ```bash
    source /cv_tool_ws/install/setup.bash
-   ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
+   ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/rosbags/boxes_0.db3
    ```
 
-5. **Send a goal** from a second shell into the same container
+4. **Send a goal** from a second shell into the same container
    (`docker exec -it <container_id> bash` → `source /cv_tool_ws/install/setup.bash`):
 
    ```bash
    ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect \
-       "{tool_name: screwdriver}" --feedback
+       "{tool_name: allen_large}" --feedback
    ```
 
    Expected server log:
 
    ```
-   [cv_tool_action_server]: Received goal to detect: screwdriver
-   [cv_tool_action_server]: screwdriver found and centered!
+   [cv_tool_action_server]: Received goal to detect: allen_large
+   [cv_tool_action_server]: allen_large found and centered!
    ```
 
    Expected action client result:
 
    ```
-   Feedback: current_status: 'Scanning frame 12 for screwdriver...'
+   Feedback: current_status: 'Scanning frame 12 for allen_large...'
    ...
    Result:
      success: true
@@ -64,12 +71,14 @@ The scenarios below all run with this replay active.
 
 ## Scenario A — request different tools
 
-Send goals for any name in `tool_class_names`:
+The sample rosbag contains the following tools: `allen_small`, `allen_large`, `long_nose_pliers_large`,
+`tape_measure`, `rachet`. Send a goal for any of them:
 
 ```bash
-ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: multimeter}" --feedback
-ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: combination_wrench}" --feedback
+ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: allen_large}" --feedback
 ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: tape_measure}" --feedback
+ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: long_nose_pliers_large}" --feedback
+ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: rachet}" --feedback
 ```
 
 Each goal streams `Scanning frame N ...` feedback until the requested tool is detected and centered,
@@ -110,9 +119,17 @@ Rebuild/re-source after editing (or mount an external config and pass its path w
 | `confidence` | YOLO confidence of the accepted detection. |
 | feedback `current_status` | Live scan progress. |
 
-With `verbose: true`, annotated RGB+depth composites are written to `output_images_<model>/`
-(bounding boxes, class+confidence, measured size, centre marker, goal/status overlay). Example
-annotated frames are in [`../media/screenshots/`](../media/screenshots/).
+With `verbose: true`, annotated RGB+depth composites are written to the mounted output folder
+(bounding boxes, class+confidence, measured size, centre marker, goal/status overlay). The three
+frames below show the typical progression for an `allen_large` goal:
+
+<table>
+<tr>
+<td align="center"><img src="../media/screenshots/20260617_095712_482013_allen_large_0040.jpg" width="380" alt="Scanning — not found"/><br/><em>Scanning — allen_large not yet in view</em></td>
+<td align="center"><img src="../media/screenshots/20260617_095755_948306_allen_large_0659.jpg" width="380" alt="Found but not centered"/><br/><em>Detected but outside centering margin</em></td>
+<td align="center"><img src="../media/screenshots/20260617_095759_821694_allen_large_0717.jpg" width="380" alt="Found and centered"/><br/><em>Stable, centered detection — goal succeeds</em></td>
+</tr>
+</table>
 
 ## Tips
 

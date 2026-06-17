@@ -64,8 +64,7 @@ class CVToolActionServer(Node):
         self.get_logger().info(f"Loading YOLO model from: {model_path}")
         self.model = YOLO(str(model_path), task='detect')  # Initialize the YOLO model
         if self.verbose:
-            model_label = model_path.stem
-            self.output_path = Path(f'output_images_{model_label}/')
+            self.output_path = Path(f'output_images/')
             self.output_path.mkdir(exist_ok=True)
         
         # Engineering stuff

@@ -117,30 +117,41 @@ the ROS 2 action server all load correctly. Stop with `Ctrl-C`.
 
 The demo replays a recorded RealSense RGB-D rosbag so you get **real detections without any
 hardware**. The bag is an **external download** (raw RGB-D is too large for git) — get the link and
-topic details from [`examples/bags/README.md`](cv_tool_ws/src/cv_tool/examples/bags/README.md).
+topic details from [`docs/04_basic_demo_how_to_use.md`](docs/04_basic_demo_how_to_use.md).
 
 ```bash
-# 1) Run the container, mounting the folder that holds the downloaded bag
+# 1) Run the container, mounting the bag folder and an output folder for annotated images
 docker run --rm -it --net=host \
-    -v /absolute/path/to/rosbags:/cv_tool_ws/bags \
+    -v /absolute/path/to/rosbags:/cv_tool_ws/rosbags \
+    -v /absolute/path/to/output:/cv_tool_ws/output_images \
     cv_tool:humble bash
 
 # 2) Inside the container — replay the bag + start the action server
 source /cv_tool_ws/install/setup.bash
-ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
+ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/rosbags/boxes_0.db3
 
 # 3) In a second shell into the same container, request a tool
 docker exec -it <container> bash
 source /cv_tool_ws/install/setup.bash
-ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect \
-    "{tool_name: screwdriver}" --feedback
+ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: allen_large}" --feedback
 ```
 
-Expected: `Scanning frame N for screwdriver...` feedback, then `screwdriver found and centered!`,
+> Annotated detection images (bounding boxes, 3D size, confidence) are written to the mounted
+> `output` folder on your host when `verbose: true` is set in `config.yaml`.
+
+Expected: `Scanning frame N for allen_large...` feedback, then `allen_large found and centered!`,
 returning `success: true` with three 3D points and a confidence score. Full walkthrough and
 scenarios: [`docs/04_basic_demo_how_to_use.md`](docs/04_basic_demo_how_to_use.md).
 
-> If the downloaded bag has no `metadata.yaml`, run `ros2 bag reindex /cv_tool_ws/bags -s sqlite3`
+<table>
+<tr>
+<td align="center"><img src="media/screenshots/20260617_095712_482013_allen_large_0040.jpg" width="380" alt="Scanning — not found"/><br/><em>Scanning — allen_large not yet in view</em></td>
+<td align="center"><img src="media/screenshots/20260617_095755_948306_allen_large_0659.jpg" width="380" alt="Found but not centered"/><br/><em>Detected but outside centering margin</em></td>
+<td align="center"><img src="media/screenshots/20260617_095759_821694_allen_large_0717.jpg" width="380" alt="Found and centered"/><br/><em>Stable, centered detection — goal succeeds</em></td>
+</tr>
+</table>
+
+> If the downloaded bag has no `metadata.yaml`, run `ros2 bag reindex /cv_tool_ws/rosbags -s sqlite3`
 > once before launching. The same `docker run --rm -it --net=host cv_tool:humble` also works against
 > a **live RealSense camera** publishing the topics in
 > [`config/config.yaml`](cv_tool_ws/src/cv_tool/config/config.yaml).
@@ -243,7 +254,7 @@ width/height threshold).
     │   ├── cv_tool/            # node + utils
     │   ├── config/config.yaml
     │   ├── launch/             # cv_tool.launch.py, cv_tool_demo.launch.py
-    │   └── examples/bags/      # how to fetch + replay the demo rosbag (external download)
+    │   └── examples/           # demo rosbag info (see docs/04 for download + walkthrough)
     └── cv_tool_interfaces/     # Detect.action definition
 ```
 
@@ -263,9 +274,8 @@ width/height threshold).
 ## Maintainer, contact & citation
 
 - **Maintainer:** Nikos Kardaris ([@nkardaris](https://github.com/nkardaris)),
-  <nick.kardaris@gmail.com>. Issues: <https://github.com/nkardaris/arise-kiro-cv-tool/issues>.
-- **Project contacts (IKNOWHOW SA):** Maria Kampa <mkampa@iknowhow.com>,
-  Angeliki Pilalitou <apilalitou@iknowhow.com>.
+  <n.kardaris@athenarc.gr>. Issues: <https://github.com/nkardaris/arise-kiro-cv-tool/issues>.
+- **Project contacts (IKNOWHOW SA):** Maria Kampa <mkampa@iknowhow.com>.
 - **Acknowledgement:** developed in the KIRO experiment, co-funded by the European Union under the
   Horizon Europe ARISE project (GA 101135784). Demonstrator video: **TODO (add URL)**.
 

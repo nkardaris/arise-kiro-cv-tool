@@ -1,7 +1,6 @@
 # 03 — Installation & hello world
 
-The supported and recommended runtime is **Docker** (Vulcanexus Humble image). A native ROS 2
-Humble path is also documented. The **hello world** here is minimal — it only confirms the install
+The supported and recommended runtime is **Docker** (Vulcanexus Humble image). The **hello world** here is minimal — it only confirms the install
 works and the node runs. To see real detections, run the **demo** in
 [`04_basic_demo_how_to_use.md`](04_basic_demo_how_to_use.md).
 
@@ -15,10 +14,8 @@ works and the node runs. To see real detections, run the **demo** in
 | System deps | `python3-opencv`, `ffmpeg` | same | `Dockerfile` |
 | ROS deps | `cv_bridge`, `sensor_msgs`, `geometry_msgs`, `rclpy` | same **+ `rosbag2`** | `package.xml` |
 | Hardware | **none** | **none** (recorded bag) | — |
-| Data | **none** | demo rosbag (external download) | [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md) |
+| Data | **none** | demo rosbag (external download) | [`docs/04_basic_demo_how_to_use.md`](04_basic_demo_how_to_use.md) |
 
-> Why Docker: `ultralytics` / `openvino` / `torch` are pip-only (no rosdep keys) and are pinned in
-> the Dockerfile, so the container gives a reproducible environment without manual dependency setup.
 
 ## Install (Docker)
 
@@ -87,8 +84,8 @@ To exercise real detection end-to-end (download + replay the sample rosbag, send
 | Symptom | Cause / fix |
 |---|---|
 | Goal aborts: *"No camera feed available"* | Expected in the hello world (no input). In the **demo**, the bag isn't playing or topics don't match — check `ros2 topic hz /camera/camera/color/image_raw`, `bag_path`, and that replay started. |
-| `ros2 bag play` errors about missing metadata (demo) | Run `ros2 bag reindex /cv_tool_ws/bags -s sqlite3`. |
+| `ros2 bag play` errors about missing metadata (demo) | Run `ros2 bag reindex /cv_tool_ws/rosbags -s sqlite3`. |
 | Warning: *"No depth feed available"* (demo) | Depth topic missing/misnamed; 3D points/size disambiguation will be unreliable. Check `depth_topic`. |
 | Goal never succeeds (demo) | The target tool may not be present/centered in the loop window; try another `tool_name`, lower `conf_thres`, or raise `margin_x/y`. |
 | Nodes don't see each other | DDS discovery — use `--net=host`; align `ROS_DOMAIN_ID` across shells. |
-| Set `verbose: true` | Saves annotated RGB+depth frames to `output_images_<model>/` for inspection. |
+| Set `verbose: true` | Saves annotated RGB+depth frames to `output_images/` for inspection. |

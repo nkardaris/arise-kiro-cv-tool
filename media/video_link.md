@@ -4,16 +4,16 @@
 
 | Video | Link |
 |---|---|
-| KIRO D3 demonstrator (end-to-end use case) | **TODO: add URL** |
-| `cv_tool` basic demo (rosbag replay + detection) | **TODO: add URL** |
+| KIRO D3 demonstrator (end-to-end use case) | **[Demonstrator videos](https://drive.google.com/drive/folders/1PVh9ubZ9ZGF8nxCfIXfp9V_g22_hQXnb)** |
+| `cv_tool` basic demo (rosbag replay + detection) | **[CV tool videos](https://drive.google.com/drive/folders/1UzyU1aMakWOPNhdOID7fD5KapY9adlrF)** |
 
 ## Demo data
 
 | Asset | Link |
 |---|---|
-| Demo rosbag `boxes_0.db3` (RealSense RGB-D) | **TODO: add download URL** — see [`examples/bags/README.md`](../cv_tool_ws/src/cv_tool/examples/bags/README.md) |
+| Demo rosbag `boxes_0.db3` (RealSense RGB-D, 571 MB zip) | [Download](https://ntuagr-my.sharepoint.com/:u:/g/personal/nkardaris_ntua_gr/IQDsEQU6eugvT6m96_PWqJ7IARBPkaxEnLrxamZVtcMAVe0?download=1) — see [`docs/04`](../docs/04_basic_demo_how_to_use.md) |
 
-## Related KIRO deliverables (from D3 Annex I)
+## Related KIRO deliverables
 
 | Material | Link |
 |---|---|
@@ -21,5 +21,5 @@
 | D2.1 (Proof of Concept) | https://drive.google.com/drive/folders/1wEI_4xPRaafFpAKw67d1bXBSl7aKGYz0 |
 | D2.1 video | https://drive.google.com/drive/folders/1X5QbdzbXpFyobgnRyQieVTStlsA7-0w9 |
 | D2.2 (MVP) | https://drive.google.com/drive/folders/11UyrMabCm_4WHTXDbXODwisRI4qAAOSK |
+| D3 (Demonstrator) | TODO |
 
-> Make sure all links are accessible to ARISE reviewers before submission.

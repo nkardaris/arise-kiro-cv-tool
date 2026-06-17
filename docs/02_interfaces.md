@@ -72,7 +72,7 @@ Parameters are provided through a YAML config passed with `--config`, not as ROS
 
 The minimum ARISE interfaces are ROS 2/Vulcanexus, FIWARE/NGSI-LD, the DDS↔NGSI-LD enabler, and
 ROS4HRI. For this module only ROS 2/Vulcanexus applies; the rest are **N/A by design**, justified
-below per the D4 guidance (§3.2.6). These should be confirmed with the ARISE mentor.
+below per the D4 guidance (§3.2.6).
 
 ### FIWARE / NGSI-LD — N/A (handled centrally in KIRO)
 

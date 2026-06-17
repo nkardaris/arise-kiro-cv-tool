@@ -3,13 +3,13 @@
 Replays a recorded RealSense RGB-D rosbag and starts the cv_tool action server, so the
 full detection pipeline can be exercised without a real camera or the original industrial
 setup. The rosbag is distributed separately as an external download (see
-``examples/bags/README.md``) because raw RGB-D recordings are too large to keep in git.
+``docs/04_basic_demo_how_to_use.md``) because raw RGB-D recordings are too large to keep in git.
 (The minimal hello world does not use this launch — it just starts the server via
 ``cv_tool.launch.py``.)
 
-Usage (inside the Docker container, with the bag mounted at /cv_tool_ws/bags):
+Usage (inside the Docker container, with the bag mounted at /cv_tool_ws/rosbags):
 
-    ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/bags/boxes_0.db3
+    ros2 launch cv_tool cv_tool_demo.launch.py bag_path:=/cv_tool_ws/rosbags/boxes_0.db3
 
 Then, in a second shell, send a goal:
 
@@ -37,9 +37,9 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'bag_path',
-            default_value='/cv_tool_ws/bags/boxes_0.db3',
+            default_value='/cv_tool_ws/rosbags/boxes_0.db3',
             description='Path to the downloaded RGB-D rosbag (directory with metadata.yaml '
-                        'or a .db3 file). See examples/bags/README.md.',
+                        'or a .db3 file). See docs/04_basic_demo_how_to_use.md.',
         ),
         DeclareLaunchArgument(
             'rate',
