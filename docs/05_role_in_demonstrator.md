@@ -8,7 +8,7 @@
 | Environment | IKH facilities, **ARISTOS assembly production area** (real, space-constrained factory floor), pilot conditions |
 | Robot / platform | **UR10e** arm on a mobile base; pneumatic vacuum gripper (PowerPick 10); **Intel RealSense** RGB-D camera on a 3D-printed mount |
 | End user / scenario | Shop-floor operators requesting on-demand tool delivery during assembly |
-| System TRL | 6 (this module ≈ TRL 5 as an extracted reusable asset) |
+| System TRL | 6 |
 | Demonstrator video | **[Link](https://drive.google.com/drive/folders/1PVh9ubZ9ZGF8nxCfIXfp9V_g22_hQXnb)** |
 
 ## Problem the module addresses
