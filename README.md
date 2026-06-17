@@ -24,7 +24,7 @@ allen key) even when the model emits a generic class.
 
 > **New here?** Read this README top-to-bottom (≈10 min), then the detailed pages under
 > [`docs/`](docs/). The quickest check that everything installed is the
-> [hello world](#hello-world-minimal-no-hardware) (no camera, no bag); to see real detections, run
+> [hello world](#quick-start-hello-world) (no camera, no bag); to see real detections, run
 > the [demo](#demo-sample-rosbag).
 
 ---
@@ -76,7 +76,7 @@ project (Grant Agreement No. 101135784).
 | Tool detection | RGB image | class + 2D bbox + confidence | `cv_tool_interfaces/action/Detect` | Implemented / tested |
 | 3D localization | RGB + depth + intrinsics | 3D `center` / `top_left` / `bottom_right` (camera frame) | action result | Implemented / tested |
 | Size disambiguation | depth bbox patch | small vs large class resolution (e.g. allen key) | internal heuristic | Implemented / tested |
-| Centering-stability gating | bbox over N frames | accept only stable, centered detections | `buffer_size`, `margin_x/y` params | Implemented / tested |
+<!---| Centering-stability gating | bbox over N frames | accept only stable, centered detections | `buffer_size`, `margin_x/y` params | Implemented / tested | -->
 
 **Measured performance** (KIRO D3 validation): detection **98.01 % precision / 98.46 % recall /
 99.23 % mAP**, **~30 ms/frame**; pilot at IKH **F1 96.88 % / mAP 97.35 %** over ~2,300 frames with
@@ -84,9 +84,9 @@ project (Grant Agreement No. 101135784).
 
 ---
 
-## Hello world (minimal, no hardware)
+## Quick Start ("hello world")
 
-The hello world just confirms everything is **installed and running** — no camera, no rosbag. The
+The hello world just confirms everything is installed and running — **no camera, no rosbag**. The
 default Docker `CMD` launches the action server, which loads the YOLO/OpenVINO model and waits for
 goals.
 
@@ -277,8 +277,29 @@ width/height threshold).
   <n.kardaris@athenarc.gr>. Issues: <https://github.com/nkardaris/arise-kiro-cv-tool/issues>.
 - **Project contacts (IKNOWHOW SA):** Maria Kampa <mkampa@iknowhow.com>.
 - **Acknowledgement:** developed in the KIRO experiment, co-funded by the European Union under the
-  Horizon Europe ARISE project (GA 101135784). Demonstrator video: **TODO (add URL)**.
+  Horizon Europe ARISE project (GA 101135784). Demonstrator video: [Drive folder](https://drive.google.com/drive/folders/1PVh9ubZ9ZGF8nxCfIXfp9V_g22_hQXnb).
 
 ## License
 
 GNU Affero General Public License v3.0 — see [LICENSE](LICENSE).
+
+**Copyright owner:** ATHENA RC (KIRO partner), on behalf of the KIRO experiment within the
+ARISE project (Horizon Europe GA 101135784).
+
+**Third-party licenses:**
+
+| Dependency | License |
+|---|---|
+| [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) | AGPL-3.0 |
+| [OpenVINO](https://github.com/openvinotoolkit/openvino) | Apache-2.0 |
+| [PyTorch](https://github.com/pytorch/pytorch) | BSD-3-Clause |
+| [OpenCV (python3-opencv)](https://opencv.org) | Apache-2.0 |
+| [ROS 2 / Vulcanexus packages](https://docs.vulcanexus.org) | Apache-2.0 |
+| [NumPy](https://numpy.org) | BSD-3-Clause |
+
+**Commercial / proprietary boundary:** this repository contains the complete open module —
+the ROS 2 action server, `Detect` action interface, launch files, config, and bundled
+YOLO/OpenVINO model. The following demonstrator-specific components are out of scope for this module:
+the KIRO mission controller and `SearchToolState` FSM that invokes `cv_tool`; the UR10e
+robot driver and MoveIt configuration; the `GrabToolState` AprilTag + vacuum-pick logic;
+and the mobile base / navigation stack.

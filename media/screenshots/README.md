@@ -1,15 +1,17 @@
 # Screenshots
 
-Place annotated detection screenshots here for the README, docs and D4 report.
+Annotated RGB+depth composite frames produced by running the demo with `verbose: true`
+(saved to the mounted output folder). The three frames below show the typical detection
+progression for an `allen_large` goal:
 
-Recommended captures (produced by running with `verbose: true`, saved under
-`output_images_<model>/`):
+| File | Status overlay | What it shows |
+|---|---|---|
+| `20260617_095712_482013_allen_large_0040.jpg` | Scanning — Not Found | Other tools visible; allen_large not yet in view |
+| `20260617_095755_948306_allen_large_0659.jpg` | Found but not centered #24 | allen detected (19×9 cm, d=47 cm) but outside margin |
+| `20260617_095759_821694_allen_large_0717.jpg` | Found and Centered! | Stable, centered detection — goal succeeds |
 
-- A **"Found and Centered!"** frame for a clearly detected tool (e.g. `screwdriver`,
-  `combination_wrench`) showing the bounding box, class + confidence, measured `WxH cm, d=cm`
-  size label, the centre marker, and the goal/status overlay.
-- A **size-disambiguation** frame showing `allen_small` vs `allen_large` resolved by measured size.
-- An RGB + depth composite (the `verbose` output concatenates the annotated RGB with the depth map).
+Each frame is a side-by-side RGB (annotated bounding boxes, class + confidence, `WxH cm, d=cm`
+size label, centre crosshair) and depth map (normalised to 8-bit).
 
-Suggested filenames: `found_and_centered.png`, `allen_size_disambiguation.png`,
-`rgb_depth_composite.png`. Reference them from [`docs/04_basic_demo_how_to_use.md`](../../docs/04_basic_demo_how_to_use.md).
+Referenced from [`docs/04_basic_demo_how_to_use.md`](../../docs/04_basic_demo_how_to_use.md)
+and [`README.md`](../../README.md).
