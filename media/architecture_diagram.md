@@ -31,12 +31,10 @@ sequenceDiagram
     MC->>CV: Detect goal {tool_name}
     loop until centered for buffer_size frames
         CAM-->>CV: RGB + depth frames (~15 Hz)
-        CV->>CV: YOLO infer → bbox; deproject; check conf & centering
+        CV->>CV: YOLO infer, deproject, check conf and centering
         CV-->>MC: feedback "Scanning frame N..."
     end
     CV-->>MC: result {success, center, top_left, bottom_right, confidence}
     MC->>MC: cancel arm sweep, go to GrabToolState
 ```
 
-> Render: GitHub renders Mermaid in Markdown automatically. Export a PNG to
-> `architecture_diagram.png` if a static image is needed for the written report.

@@ -1,3 +1,4 @@
+from datetime import datetime
 from math import sqrt
 import cv2
 from ultralytics.utils.plotting import Annotator, colors
@@ -176,7 +177,8 @@ def save_annotated_image(output_path, current_frame, depth_frame, class_names, c
     center_x, center_y = w // 2, h // 2
     cv2.drawMarker(annotated_frame, (center_x, center_y), color=(0, 0, 255), markerType=cv2.MARKER_CROSS, markerSize=20, thickness=2)
     
-    output_file = output_path.joinpath(f'{target_tool}_{counter:04d}.jpg')
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    output_file = output_path.joinpath(f'{timestamp}_{target_tool}_{counter:04d}.jpg')
     
     
     # Normalize depth image to 8-bit so it can be concatenated with the 8-bit BGR annotated_frame
