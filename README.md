@@ -230,9 +230,9 @@ The node loads YOLO / OpenVINO models from `model_path`. To use your own:
 3. **Point the config** at it: `model_path: models/<your_model>_openvino_model`.
 4. **Rebuild** (`colcon build` / `docker build`).
 
-If your model includes tools that look identical but differ in size, adjust the size heuristics in
-[cv_tool.py](cv_tool_ws/src/cv_tool/cv_tool/cv_tool.py) (`tool_in_frame`, around the `0.17 m`
-width/height threshold).
+If your model includes tools that look identical but differ in size, add an entry to `config.yaml`
+under `size_disambiguation` with the class prefix and metric threshold (e.g.
+`long_nose_pliers: {size_threshold: 0.25}`) — no code change needed.
 
 ## Repository layout
 
@@ -261,9 +261,10 @@ width/height threshold).
 ## Limitations
 
 - **No-hardware demo requires an external rosbag download** (not bundled in git due to size).
-- **Depth-dependent size disambiguation:** small-vs-large class resolution relies on a fixed metric
-  threshold and reliable depth; noisy or out-of-range depth (≤0.2 m or >1.0 m) falls back to the
-  class name. Intrinsics in the config must match the camera.
+- **Depth-dependent size disambiguation:** small-vs-large class resolution relies on a configurable
+  metric threshold (`size_disambiguation` in `config.yaml`) and reliable depth; noisy or
+  out-of-range depth (≤0.2 m or >1.0 m) falls back to the class name. Intrinsics in the config
+  must match the camera.
 - **Tuned for the KIRO tool set / tray layout** at a near-top-down working distance; other tools,
   backgrounds or distances may need re-training and re-tuning of `conf_thres` / margins / size
   threshold.

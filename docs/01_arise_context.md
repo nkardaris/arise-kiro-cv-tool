@@ -9,7 +9,6 @@ software module of the KIRO TRL6-7 demonstrator: a ROS 2 / Vulcanexus **action s
 recognizes industrial tools and returns their 3D position for robotic picking.
 
 It is listed as a reusable module in the KIRO D3 deliverable:
-> *"Industrial tool recognition and identification inside boxes/trays based on Computer Vision."*
 
 ## KIRO in one paragraph
 

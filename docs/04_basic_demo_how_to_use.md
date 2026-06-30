@@ -95,7 +95,8 @@ ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name:
 ros2 action send_goal /detect_tool cv_tool_interfaces/action/Detect "{tool_name: allen_large}" --feedback
 ```
 
-Only the variant whose measured size matches (threshold ≈ 0.17 m width/height) is accepted. With
+Only the variant whose measured size matches the threshold is accepted (default 0.17 m width/height,
+configurable via `size_disambiguation` in `config.yaml`). With
 `verbose: true`, the saved annotated frame shows the measured `WxH cm, d=cm` label per detection.
 
 ## Scenario C — centering-stability behaviour

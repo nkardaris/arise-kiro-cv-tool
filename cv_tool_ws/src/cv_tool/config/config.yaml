@@ -25,3 +25,6 @@ camera_intrinsics:
   cx: 322.15924072265625
   cy: 236.45346069335938
   depth_scale: 0.001 # depth image is in millimeters, convert to meters
+size_disambiguation:
+  allen:
+    size_threshold: 0.17   # metres; bbox width or height above this → "large"

@@ -72,7 +72,8 @@ class CVToolActionServer(Node):
         self.conf_thres = args.conf_thres
         self.margin_x = args.margin_x
         self.margin_y = args.margin_y
-        self.allen_latest_measurment = None
+        self.size_disambiguation = args.size_disambiguation  # {prefix: threshold}
+        self.latest_measurements = {}                        # {prefix: (w, h, z)} cache
         
         self.get_logger().info("CVToolActionServer ready. Waiting for goals...")
 
@@ -107,7 +108,7 @@ class CVToolActionServer(Node):
         rate = self.create_rate(15) # Process at max 15 Hz to save CPU/GPU
         frame_counter = 0
         found_counter = 0
-        self.allen_latest_measurment = None
+        self.latest_measurements = {}
 
         while rclpy.ok():
             if goal_handle.is_cancel_requested:
@@ -184,42 +185,52 @@ class CVToolActionServer(Node):
             rate.sleep()
 
     def tool_in_frame(self, detected_name, target_tool, bbox_size):
-        if "allen" not in target_tool.lower():
-            return target_tool.lower() in detected_name.lower()
-        
-        else:
-            # We are looking for an allen key, but the model just says "allen" without size info.
-            # We need to use depth data to verify if it's "allen_small" or "allen_large".
-            if "allen" in detected_name.lower(): # We are looking at an allen key and the model also detected allen
-                if bbox_size is None: # No valid depth data available
-                    self.get_logger().warning("Depth data not available. Cannot verify allen key size. Relying on class name alone.")
-                    return True
-                
-                width, height, z = bbox_size
-                
-                if z == 0.0 or width == 0.0 or height == 0.0 or z > 1.0 or z < 0.2:
-                    self.get_logger().warning(f"Warning: Unreliable depth data for allen key (width={width:.2f}, height={height:.2f}, depth={z:.2f}). Cannot verify size")
-                    if self.allen_latest_measurment is not None:
-                        width, height, z = self.allen_latest_measurment
-                        self.get_logger().info(f"Warning: Using latest measurement for allen key size: width={width:.2f}m, height={height:.2f}m, depth={z:.2f}m")
-                    else:
-                        self.get_logger().warning("Warning: No recent depth measurements available. Relying on class name alone.")
-                        return True # We can't get size info --> just rely on the class name
-                else: # Valid depth reading
-                    self.allen_latest_measurment = (width, height, z)
-                
-                target_size = target_tool.lower().replace("allen", "").strip('_')
-                if target_size not in ["small", "large"]: # size not specified
-                    return True                    
-                
-                if width > 0.17 or height > 0.17:
-                    detected_size = "large"
-                else:
-                    detected_size = "small"
-                return target_size == detected_size
-            
+        target_lower = target_tool.lower()
+        detected_lower = detected_name.lower()
+
+        matched_prefix = next(
+            (p for p in self.size_disambiguation if p in target_lower), None
+        )
+
+        if matched_prefix is None:
+            return target_lower in detected_lower
+
+        if matched_prefix not in detected_lower:
+            return False
+
+        threshold = self.size_disambiguation[matched_prefix]
+
+        if bbox_size is None:
+            self.get_logger().warning(
+                f"Depth data not available. Cannot verify {matched_prefix} size. Relying on class name alone."
+            )
+            return True
+
+        width, height, z = bbox_size
+        if z == 0.0 or width == 0.0 or height == 0.0 or z > 1.0 or z < 0.2:
+            self.get_logger().warning(
+                f"Unreliable depth data for {matched_prefix} "
+                f"(width={width:.2f}, height={height:.2f}, depth={z:.2f}). Cannot verify size"
+            )
+            cached = self.latest_measurements.get(matched_prefix)
+            if cached is not None:
+                width, height, z = cached
+                self.get_logger().info(
+                    f"Using latest measurement for {matched_prefix}: "
+                    f"width={width:.2f}m, height={height:.2f}m, depth={z:.2f}m"
+                )
             else:
-                return False
+                self.get_logger().warning("No recent depth measurements available. Relying on class name alone.")
+                return True
+        else:
+            self.latest_measurements[matched_prefix] = (width, height, z)
+
+        target_size = target_lower.replace(matched_prefix, "").strip("_")
+        if target_size not in ("small", "large"):
+            return True
+
+        detected_size = "large" if (width > threshold or height > threshold) else "small"
+        return target_size == detected_size
     
     
     def is_tool_centered(self, frame_shape, coords, margin_x=100, margin_y=100):
@@ -348,6 +359,15 @@ def load_config(config_path):
         raise ValueError(f"'camera_intrinsics' missing keys: {', '.join(missing_intrinsics)}")
     camera_intrinsics = {key: float(camera_intrinsics[key]) for key in intrinsics_keys}
 
+    raw_sd = config_data.get('size_disambiguation', {})
+    if not isinstance(raw_sd, dict):
+        raise ValueError("'size_disambiguation' must be a mapping of {prefix: {size_threshold: float}}")
+    size_disambiguation = {}
+    for prefix, cfg in raw_sd.items():
+        if not isinstance(cfg, dict) or 'size_threshold' not in cfg:
+            raise ValueError(f"'size_disambiguation.{prefix}' must have a 'size_threshold' key")
+        size_disambiguation[str(prefix)] = float(cfg['size_threshold'])
+
     return argparse.Namespace(
         rgb_topic=str(config_data['rgb_topic']),
         depth_topic=str(config_data['depth_topic']),
@@ -359,6 +379,7 @@ def load_config(config_path):
         verbose=verbose,
         tool_class_names=tool_class_names,
         camera_intrinsics=camera_intrinsics,
+        size_disambiguation=size_disambiguation,
     )
 
 def setup_tee_logging(log_dir='logs'):
