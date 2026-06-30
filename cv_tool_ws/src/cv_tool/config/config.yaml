@@ -26,5 +26,5 @@ camera_intrinsics:
   cy: 236.45346069335938
   depth_scale: 0.001 # depth image is in millimeters, convert to meters
 size_disambiguation:
-  allen:
-    size_threshold: 0.17   # metres; bbox width or height above this → "large"
+  allen: # allen_small & allen_large should be present in tool_class_names
+    size_threshold: 0.17   # in metres; bounding box width or height > size_threshold → "large", else "small"
